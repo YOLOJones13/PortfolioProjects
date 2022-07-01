@@ -17,15 +17,27 @@ SELECT DISTINCT(Measure)
 FROM PortfolioProject..Border_Crossing_Entry_Data_v2
 GO
 
+--Creating temp tables for cleaner visual
+SELECT *
+INTO #no_passenger_cross
+FROM PortfolioProject..Border_Crossing_Entry_Data_v2
+WHERE (Measure = 'Personal Vehicles' OR Measure = 'Trucks' OR Measure = 'Pedestrians' OR 
+	   Measure = 'Buses' OR Measure = 'Trains')
+GO
+
+SELECT *
+INTO #passenger_cross
+FROM PortfolioProject..Border_Crossing_Entry_Data_v2
+WHERE (Measure = 'Personal Vehicle Passengers' OR Measure = 'Bus Passengers' OR Measure = 'Train Passengers')
+GO
+
 --Which states had the greatest number of border crossings 
 --over a period of time (ie 5 years)? Greatest number of passengers?
 
 SELECT State, SUM(Value) AS 'Total Non-Passenger Crossings'
 
-FROM PortfolioProject..Border_Crossing_Entry_Data_v2
-WHERE (Measure = 'Personal Vehicles' OR Measure = 'Trucks' OR Measure = 'Pedestrians' OR 
-	   Measure = 'Buses' OR Measure = 'Trains')
-	   AND (DATEPART(YEAR, Date) > 2000 AND DATEPART(YEAR, Date) < 2006)
+FROM #no_passenger_cross
+WHERE (DATEPART(YEAR, Date) > 2000 AND DATEPART(YEAR, Date) < 2006)
 GROUP BY State
 ORDER BY [Total Non-Passenger Crossings] DESC
 
@@ -33,13 +45,13 @@ GO
 
 --Looking at a certain set of years, for example from 2000 through 2005, 
 --the state with the greatest number of border crossings was Texas, with 1,050,825,447 crossings in the span of 5 years.
+--Below, we take a look the total number of passengers involved in border crossings.
 
 
 SELECT State, SUM(Value) AS 'Total of Crossings with Passengers'
 
-FROM PortfolioProject..Border_Crossing_Entry_Data_v2
-WHERE (Measure = 'Personal Vehicle Passengers' OR Measure = 'Bus Passengers' OR Measure = 'Train Passengers')
-	   AND (DATEPART(YEAR, Date) > 2000 AND DATEPART(YEAR, Date) < 2006)
+FROM #passenger_cross
+WHERE (DATEPART(YEAR, Date) > 2000 AND DATEPART(YEAR, Date) < 2006)
 GROUP BY State
 ORDER BY [Total of Crossings with Passengers] DESC
 
@@ -52,15 +64,7 @@ GO
 --Which border (Canadian or Mexican) had the largest number of crossings?
 
 SELECT Border, DATEPART(YEAR, Date) AS 'Date', SUM(Value) AS 'Total Number of Crossings'
-FROM PortfolioProject..Border_Crossing_Entry_Data_v2
-WHERE 
-	(
-	Measure = 'Personal Vehicles' OR 
-	Measure = 'Trucks' OR
-	Measure = 'Pedestrians' OR
-	Measure = 'Buses' OR
-	Measure = 'Trains'
-	) 
+FROM #no_passenger_cross
 GROUP BY DATEPART(YEAR, Date), Border
 ORDER BY Date ASC, Border ASC	-- Border ASC, Date ASC shows trend over time for each border separately
 GO
@@ -70,14 +74,8 @@ GO
 --For total instances of crossings between the two borders from January,1996 to February,2022, the following query will show the difference.
 
 SELECT Border, SUM(Value) AS 'Total Number of Crossings'
-FROM PortfolioProject..Border_Crossing_Entry_Data
-WHERE (Measure = 'Personal Vehicles' OR Measure = 'Trucks' OR Measure = 'Pedestrians' OR 
-	   Measure = 'Buses' OR Measure = 'Trains')
-	--AND
-	--DATEPART(YEAR, Date) = '2015'
-
+FROM #no_passenger_cross
 GROUP BY Border
-
 ORDER BY Border ASC
 GO
 
@@ -99,11 +97,9 @@ SELECT Border,
 	   --DATEPART(MONTH, Date) AS 'Month', 
 	   SUM(Value) AS 'Total Number of Crossings'
 
-FROM PortfolioProject..Border_Crossing_Entry_Data_v2
+FROM #no_passenger_cross
 
-WHERE (Measure = 'Personal Vehicles' OR Measure = 'Trucks' OR Measure = 'Pedestrians' OR 
-	   Measure = 'Buses' OR Measure = 'Trains')
-	   AND DATEPART(YEAR, Date) = '2015'
+WHERE DATEPART(YEAR, Date) = '2015'
 	   
 GROUP BY Border, DATEPART(YEAR, Date), DATEPART(MONTH, Date)--DATEPART(MONTH, Date)
 ORDER BY Border ASC, [Total Number of Crossings] DESC
@@ -121,10 +117,8 @@ GO
 
 
 SELECT [Port Code], SUM(Value) AS 'Total Number of Crossings'
-FROM PortfolioProject..Border_Crossing_Entry_Data_v2
-WHERE (Measure = 'Personal Vehicles' OR Measure = 'Trucks' OR Measure = 'Pedestrians' OR 
-	   Measure = 'Buses' OR Measure = 'Trains')
-	   AND DATEPART(YEAR, Date) = '2017'
+FROM #no_passenger_cross
+WHERE DATEPART(YEAR, Date) = '2017'
 GROUP BY [Port Code]
 ORDER BY [Total Number of Crossings] DESC
 GO
@@ -133,10 +127,8 @@ GO
 --The following query will tell us which city and state these two unique ports are located.
 ;
 SELECT [Port Name], State, [Port Code]
-FROM PortfolioProject..Border_Crossing_Entry_Data_v2
-WHERE (Measure = 'Personal Vehicles' OR Measure = 'Trucks' OR Measure = 'Pedestrians' OR 
-	   Measure = 'Buses' OR Measure = 'Trains')
-	   AND DATEPART(YEAR, Date) = '2017'
+FROM #no_passenger_cross
+WHERE DATEPART(YEAR, Date) = '2017'
 	   AND [Port Code] = 2504 
 	   OR [Port Code] = 3321
 GROUP BY [Port Name], State, [Port Code]
